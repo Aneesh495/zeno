@@ -1,0 +1,7 @@
+# Zeno Test Suite Configuration
+-cp src
+-cp tests
+-main zeno.TestMain
+-dce full
+-D analyzer-optimize
+--interp

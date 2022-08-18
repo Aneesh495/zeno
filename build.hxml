@@ -1,0 +1,6 @@
+# Zeno Main Build Configuration
+-cp src
+-main zeno.cli.CLI
+-dce full
+-D analyzer-optimize
+--interp

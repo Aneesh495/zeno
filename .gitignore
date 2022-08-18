@@ -1,0 +1,28 @@
+# Zeno Build Artifacts
+bin/
+export/
+*.n
+*.js
+*.py
+*.exe
+*.o
+*.obj
+*.a
+*.lib
+*.dylib
+*.so
+*.dll
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Test / Benchmark outputs
+*.znr
+*.log
+coverage/
+tmp/

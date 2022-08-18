@@ -1,0 +1,6 @@
+# Zeno Benchmark Suite Configuration
+-cp src
+-main zeno.bench.BenchmarkRunner
+-dce full
+-D analyzer-optimize
+--interp

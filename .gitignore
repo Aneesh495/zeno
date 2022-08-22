@@ -2,8 +2,9 @@
 bin/
 export/
 *.n
-*.js
-*.py
+*.js.map
+*.pyc
+__pycache__/
 *.exe
 *.o
 *.obj

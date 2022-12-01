@@ -94,9 +94,9 @@ class GJK {
         var ac = c.point.sub(a.point);
         var ao = a.point.negate();
 
-        // Edge normals pointing outward
-        var abNormal = FPVector2.scalarCross(ab.cross(ac), ab);
-        var acNormal = FPVector2.scalarCross(ac.cross(ab), ac);
+        // Edge normals pointing outward away from third vertex
+        var abNormal = FPVector2.scalarCross(ac.cross(ab), ab);
+        var acNormal = FPVector2.scalarCross(ab.cross(ac), ac);
 
         if (abNormal.dot(ao) > FPNumber.ZERO) {
             // Origin is outside edge AB: remove C

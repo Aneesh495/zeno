@@ -5,7 +5,7 @@ import haxe.Int64;
 
 /**
  * High-precision Q16.16 fixed-point scalar representation.
- * Implemented as an unboxed 32-bit integer abstract type with operator overloading.
+ * Implemented as a strongly-typed abstract type over 32-bit integer with saturating arithmetic.
  * Eliminates IEEE-754 floating-point platform discrepancies, providing bit-exact
  * mathematical determinism across all targets and hardware architectures.
  *
@@ -14,7 +14,7 @@ import haxe.Int64;
  * - 15 integer bits (range: -32768 to 32767)
  * - 16 fractional bits (precision: 1/65536 = ~0.000015258789)
  */
-abstract FPNumber(Int32) from Int32 to Int32 {
+abstract FPNumber(Int32) {
     public static inline var SHIFT: Int = 16;
     public static inline var FRACTION_MASK: Int32 = 0x0000FFFF;
     public static inline var INTEGER_MASK: Int32 = ~0x0000FFFF;
@@ -30,6 +30,9 @@ abstract FPNumber(Int32) from Int32 to Int32 {
     public static var RAW_RAD_TO_DEG(default, never): Int32 = 3754936; // (180/PI) * 65536
     public static var RAW_MAX(default, never): Int32 = 0x7FFFFFFF;
     public static var RAW_MIN(default, never): Int32 = -0x80000000;
+
+    private static var MAX_64(default, never): Int64 = Int64.ofInt(0x7FFFFFFF);
+    private static var MIN_64(default, never): Int64 = Int64.make(0xFFFFFFFF, 0x80000000);
 
     public static var ZERO(get, never): FPNumber;
     public static var ONE(get, never): FPNumber;
@@ -86,22 +89,42 @@ abstract FPNumber(Int32) from Int32 to Int32 {
 
     @:op(A + B)
     public static inline function add(a: FPNumber, b: FPNumber): FPNumber {
-        return new FPNumber(a.getRaw() + b.getRaw());
+        var a64 = Int64.ofInt(a.getRaw());
+        var b64 = Int64.ofInt(b.getRaw());
+        var sum = Int64.add(a64, b64);
+        if (Int64.compare(sum, MAX_64) > 0) return MAX_VALUE;
+        if (Int64.compare(sum, MIN_64) < 0) return MIN_VALUE;
+        return new FPNumber(Int64.toInt(sum));
     }
 
     @:op(A + B)
     public static inline function addInt(a: FPNumber, b: Int): FPNumber {
-        return new FPNumber(a.getRaw() + (b << SHIFT));
+        return add(a, fromInt(b));
+    }
+
+    @:op(A + B)
+    public static inline function intAdd(a: Int, b: FPNumber): FPNumber {
+        return add(fromInt(a), b);
     }
 
     @:op(A - B)
     public static inline function sub(a: FPNumber, b: FPNumber): FPNumber {
-        return new FPNumber(a.getRaw() - b.getRaw());
+        var a64 = Int64.ofInt(a.getRaw());
+        var b64 = Int64.ofInt(b.getRaw());
+        var diff = Int64.sub(a64, b64);
+        if (Int64.compare(diff, MAX_64) > 0) return MAX_VALUE;
+        if (Int64.compare(diff, MIN_64) < 0) return MIN_VALUE;
+        return new FPNumber(Int64.toInt(diff));
     }
 
     @:op(A - B)
     public static inline function subInt(a: FPNumber, b: Int): FPNumber {
-        return new FPNumber(a.getRaw() - (b << SHIFT));
+        return sub(a, fromInt(b));
+    }
+
+    @:op(A - B)
+    public static inline function intSub(a: Int, b: FPNumber): FPNumber {
+        return sub(fromInt(a), b);
     }
 
     @:op(A * B)
@@ -110,12 +133,19 @@ abstract FPNumber(Int32) from Int32 to Int32 {
         var b64 = Int64.ofInt(b.getRaw());
         var prod = Int64.mul(a64, b64);
         var shifted = Int64.shr(prod, SHIFT);
+        if (Int64.compare(shifted, MAX_64) > 0) return MAX_VALUE;
+        if (Int64.compare(shifted, MIN_64) < 0) return MIN_VALUE;
         return new FPNumber(Int64.toInt(shifted));
     }
 
     @:op(A * B)
     public static inline function mulInt(a: FPNumber, b: Int): FPNumber {
-        return new FPNumber(a.getRaw() * b);
+        return mul(a, fromInt(b));
+    }
+
+    @:op(A * B)
+    public static inline function intMul(a: Int, b: FPNumber): FPNumber {
+        return mul(fromInt(a), b);
     }
 
     @:op(A / B)
@@ -128,13 +158,20 @@ abstract FPNumber(Int32) from Int32 to Int32 {
         var shifted = Int64.shl(a64, SHIFT);
         var b64 = Int64.ofInt(bRaw);
         var quotient = Int64.div(shifted, b64);
+        if (Int64.compare(quotient, MAX_64) > 0) return MAX_VALUE;
+        if (Int64.compare(quotient, MIN_64) < 0) return MIN_VALUE;
         return new FPNumber(Int64.toInt(quotient));
     }
 
     @:op(A / B)
     public static inline function divInt(a: FPNumber, b: Int): FPNumber {
         if (b == 0) return a.getRaw() >= 0 ? MAX_VALUE : MIN_VALUE;
-        return new FPNumber(Std.int(a.getRaw() / b));
+        return div(a, fromInt(b));
+    }
+
+    @:op(A / B)
+    public static inline function intDiv(a: Int, b: FPNumber): FPNumber {
+        return div(fromInt(a), b);
     }
 
     @:op(A == B)

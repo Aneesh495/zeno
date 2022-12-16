@@ -12,8 +12,7 @@ import zeno.physics.BodyType;
  */
 class SimCommand {
     public static function run(args: Array<String>): Void {
-        #if sys
-        Sys.println("\n[Zeno Sim] Initializing Deterministic Simulation Environment...");
+        CLI.println("\n[Zeno Sim] Initializing Deterministic Simulation Environment...");
 
         var ticks = 300; // 5 seconds at 60Hz
         if (args.length > 0 && Std.parseInt(args[0]) != null) {
@@ -40,11 +39,11 @@ class SimCommand {
             engine.spawnBody(shape, BodyDynamic, new FPVector2(x, y));
         }
 
-        Sys.println("[Zeno Sim] Spawned " + numBodies + " dynamic rigid bodies and ground boundary.");
-        Sys.println("[Zeno Sim] Running " + ticks + " simulation ticks with speculative rollback injection...");
+        CLI.println("[Zeno Sim] Spawned " + numBodies + " dynamic rigid bodies and ground boundary.");
+        CLI.println("[Zeno Sim] Running " + ticks + " simulation ticks with speculative rollback injection...");
 
         var rollbacksTriggered = 0;
-        var start = Sys.time();
+        var start = haxe.Timer.stamp();
 
         for (t in 0...ticks) {
             // Submit local input (Player 0)
@@ -61,20 +60,19 @@ class SimCommand {
             var snapshot = engine.step();
 
             if (t % 60 == 0) {
-                Sys.println("  Tick " + StringTools.lpad(Std.string(t), " ", 4) + " | Entities: " + engine.world.getEntityCount() +
+                CLI.println("  Tick " + StringTools.lpad(Std.string(t), " ", 4) + " | Entities: " + engine.world.getEntityCount() +
                             " | Rollbacks: " + engine.rollback.getTotalRollbacks() +
                             " | State Hash: " + StringTools.hex(snapshot.checksum, 8));
             }
         }
 
-        var elapsed = Sys.time() - start;
+        var elapsed = haxe.Timer.stamp() - start;
         var fps = Math.round(ticks / elapsed);
 
-        Sys.println("\n[Zeno Sim] Simulation completed successfully!");
-        Sys.println("  Total Ticks Simulated : " + ticks);
-        Sys.println("  Total Rollbacks       : " + engine.rollback.getTotalRollbacks());
-        Sys.println("  Frames Resimulated    : " + engine.rollback.getTotalResimulatedFrames());
-        Sys.println("  Elapsed Wall Clock    : " + Math.round(elapsed * 1000.0) / 1000.0 + "s (" + fps + " ticks/sec)\n");
-        #end
+        CLI.println("\n[Zeno Sim] Simulation completed successfully!");
+        CLI.println("  Total Ticks Simulated : " + ticks);
+        CLI.println("  Total Rollbacks       : " + engine.rollback.getTotalRollbacks());
+        CLI.println("  Frames Resimulated    : " + engine.rollback.getTotalResimulatedFrames());
+        CLI.println("  Elapsed Wall Clock    : " + Math.round(elapsed * 1000.0) / 1000.0 + "s (" + fps + " ticks/sec)\n");
     }
 }

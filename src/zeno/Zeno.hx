@@ -7,6 +7,8 @@ import zeno.ecs.World;
 import zeno.ecs.Entity;
 import zeno.ecs.ComponentType;
 import zeno.geom.Shape;
+import zeno.geom.CircleShape;
+import zeno.geom.BoxShape;
 import zeno.physics.PhysicsWorld;
 import zeno.physics.RigidBody;
 import zeno.physics.Collider;
@@ -21,6 +23,7 @@ import zeno.event.EventBus;
  * Top-level facade coordinating the archetype ECS world, deterministic physics engine,
  * speculative rollback manager, and event bus into a unified simulation runtime.
  */
+@:expose("Zeno")
 class Zeno {
     public var world(default, null): World;
     public var physics(default, null): PhysicsWorld;
@@ -123,6 +126,85 @@ class Zeno {
                 rec.body.isAwake = e.isAwake;
             }
         }
+    }
+
+    public function spawnCircle(radius: Float, x: Float, y: Float, isDynamic: Bool = true): Entity {
+        var shape = new CircleShape(FPNumber.fromFloat(radius));
+        var bType = isDynamic ? BodyDynamic : BodyStatic;
+        var res = spawnBody(shape, bType, new FPVector2(FPNumber.fromFloat(x), FPNumber.fromFloat(y)));
+        return res.entity;
+    }
+
+    public function spawnBox(halfWidth: Float, halfHeight: Float, x: Float, y: Float, isDynamic: Bool = true): Entity {
+        var shape = new BoxShape(FPNumber.fromFloat(halfWidth), FPNumber.fromFloat(halfHeight));
+        var bType = isDynamic ? BodyDynamic : BodyStatic;
+        var res = spawnBody(shape, bType, new FPVector2(FPNumber.fromFloat(x), FPNumber.fromFloat(y)));
+        return res.entity;
+    }
+
+    public function submitInput(player: Int, inputMask: Int): Void {
+        rollback.setLocalInput(player, inputMask);
+    }
+
+    public function injectRollback(framesBack: Int, player: Int, inputMask: Int): Void {
+        var targetFrame = rollback.currentFrame - framesBack;
+        if (targetFrame < 0) targetFrame = 0;
+        rollback.onRemoteInput(player, targetFrame, inputMask, fixedDeltaTime);
+    }
+
+    public function getStateForRenderer(): Dynamic {
+        var bodyList: Array<Dynamic> = [];
+        for (rec in @:privateAccess physics.bodies) {
+            var isCircle = (rec.collider.shape.type == ShapeCircle);
+            var isBox = (rec.collider.shape.type == ShapeBox);
+            var rad = isCircle ? (cast(rec.collider.shape, CircleShape).radius.toFloat()) : 0.0;
+            var hw = isBox ? (cast(rec.collider.shape, BoxShape).halfExtents.x.toFloat()) : 0.0;
+            var hh = isBox ? (cast(rec.collider.shape, BoxShape).halfExtents.y.toFloat()) : 0.0;
+            var aabb = rec.collider.shape.computeAABB(rec.body.transform);
+
+            bodyList.push({
+                id: rec.entity.getIndex(),
+                type: rec.body.type == BodyStatic ? "static" : (rec.body.type == BodyKinematic ? "kinematic" : "dynamic"),
+                x: rec.body.transform.position.x.toFloat(),
+                y: rec.body.transform.position.y.toFloat(),
+                angle: rec.body.transform.angle.toFloat(),
+                vx: rec.body.linearVelocity.x.toFloat(),
+                vy: rec.body.linearVelocity.y.toFloat(),
+                shapeType: isCircle ? "circle" : (isBox ? "box" : "polygon"),
+                radius: rad,
+                halfWidth: hw,
+                halfHeight: hh,
+                minX: aabb.lowerBound.x.toFloat(),
+                minY: aabb.lowerBound.y.toFloat(),
+                maxX: aabb.upperBound.x.toFloat(),
+                maxY: aabb.upperBound.y.toFloat(),
+                isAwake: rec.body.isAwake
+            });
+        }
+
+        var contactList: Array<Dynamic> = [];
+        for (c in @:privateAccess physics.contacts) {
+            contactList.push({
+                px: c.point.x.toFloat(),
+                py: c.point.y.toFloat(),
+                nx: c.normal.x.toFloat(),
+                ny: c.normal.y.toFloat(),
+                depth: c.penetration.toFloat()
+            });
+        }
+
+        var latestSnap = rollback.currentFrame > 0 ? rollback.getBuffer().getSnapshot(rollback.currentFrame - 1) : null;
+        var chk = latestSnap != null ? latestSnap.checksum : 0;
+
+        return {
+            frame: rollback.currentFrame,
+            rollbacks: rollback.getTotalRollbacks(),
+            resimulated: rollback.getTotalResimulatedFrames(),
+            checksum: chk,
+            entityCount: world.getEntityCount(),
+            bodies: bodyList,
+            contacts: contactList
+        };
     }
 
     public function clear(): Void {

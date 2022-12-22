@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zeno | Deterministic Simulation & Rollback Runtime</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app-container">
+        <header id="header">
+            <div class="logo">
+                <span class="brand-title">ZENO</span>
+                <span class="brand-subtitle">Deterministic Rollback & Physics Runtime</span>
+            </div>
+            <div class="metrics-bar">
+                <div class="metric"><span class="metric-label">Frame:</span> <span id="metric-frame">0</span></div>
+                <div class="metric"><span class="metric-label">Entities:</span> <span id="metric-entities">0</span></div>
+                <div class="metric"><span class="metric-label">Rollbacks:</span> <span id="metric-rollbacks">0</span></div>
+                <div class="metric"><span class="metric-label">Resimulated:</span> <span id="metric-resim">0</span></div>
+                <div class="metric"><span class="metric-label">Hash:</span> <span id="metric-hash" class="hash-code">0x00000000</span></div>
+            </div>
+        </header>
+
+        <main id="viewport-container">
+            <canvas id="sim-canvas" width="1280" height="720"></canvas>
+            <div id="overlay-stats">
+                <div class="stat-row">Broadphase: Dynamic BVH (SAH)</div>
+                <div class="stat-row">Narrowphase: GJK / EPA / SAT</div>
+                <div class="stat-row">Solver: Sequential Impulses (8 iters)</div>
+                <div class="stat-row">Arithmetic: Q16.16 Bit-Exact Fixed-Point</div>
+            </div>
+        </main>
+
+        <footer id="controls-bar">
+            <div class="control-group">
+                <button id="btn-play" class="btn btn-primary">Play</button>
+                <button id="btn-pause" class="btn">Pause</button>
+                <button id="btn-step" class="btn">Step (+1)</button>
+                <button id="btn-reset" class="btn">Reset</button>
+            </div>
+            <div class="control-group">
+                <button id="btn-spawn-ball" class="btn btn-action">+ Spawn Sphere</button>
+                <button id="btn-spawn-box" class="btn btn-action">+ Spawn Box</button>
+                <button id="btn-inject-rollback" class="btn btn-warn">⚡ Inject Rollback (-10 Frames)</button>
+            </div>
+            <div class="control-group toggles">
+                <label><input type="checkbox" id="chk-bvh" checked> Show BVH</label>
+                <label><input type="checkbox" id="chk-velocities"> Velocities</label>
+            </div>
+        </footer>
+    </div>
+    <script src="../bin/zeno.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

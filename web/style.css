@@ -166,3 +166,21 @@ body {
     display: flex;
     gap: 14px;
 }
+
+.preview-context {
+  margin: 0;
+  padding: .6rem 1rem;
+  background: #121b27;
+  color: #d6e2ed;
+  font: 400 .85rem/1.45 system-ui, sans-serif;
+  overflow-wrap: anywhere;
+}
+.preview-context a { color: #9bdeff; }
+:focus-visible { outline: 3px solid #9bdeff; outline-offset: 2px; }
+
+#viewport-container { min-height: 0; }
+@media (max-width: 760px) {
+  body, #app-container { height: auto; min-height: 100vh; overflow: auto; }
+  #header, #controls-bar, #controls-bar > div { height: auto; flex-wrap: wrap; gap: .45rem; }
+  #viewport-container { flex: none; height: 54vh; }
+}
